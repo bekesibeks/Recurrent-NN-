@@ -1,7 +1,9 @@
-package network;
+package network.recurrent;
 
 import network.data.BatchTrainingSample;
 import network.data.TrainingSample;
+import network.vanilla.Neuron;
+import network.vanilla.Weight;
 import utils.NetworkUtils;
 
 import java.util.ArrayList;
@@ -11,15 +13,15 @@ import java.util.stream.Collectors;
 import static java.util.Objects.nonNull;
 import static utils.NetworkUtils.*;
 
-public class NeuralNetwork {
+public class RecurrentNeuralNetwork {
 
     private final List<Neuron> inputLayer;
-    private final List<Neuron> hiddenLayer;
+    private final List<RecurrentNeuron> hiddenLayer;
     private final List<Neuron> outputLayer;
 
-    public NeuralNetwork() {
+    public RecurrentNeuralNetwork() {
         this.inputLayer = NetworkUtils.createNeurons(INPUT_LAYER_SIZE);
-        this.hiddenLayer = NetworkUtils.createNeurons(HIDDEN_LAYER_SIZE);
+        this.hiddenLayer = NetworkUtils.createRecurrentNeurons(HIDDEN_LAYER_SIZE);
         this.outputLayer = NetworkUtils.createNeurons(OUTPUT_LAYER_SIZE);
 
         NetworkUtils.buildConnectionBetweenNeurons(inputLayer, hiddenLayer);
@@ -37,91 +39,89 @@ public class NeuralNetwork {
             inputLayer.get(i).setOutput(inputs.get(i));
         }
 
-        hiddenLayer.stream().forEach(Neuron::calculateOutput);
+        List<Double> outputsOfHiddenLayer = hiddenLayer.stream().map(Neuron::calculateOutput).collect(Collectors.toList());
+        hiddenLayer.stream().forEach(neuron -> neuron.addPreviousOutput(outputsOfHiddenLayer));
         outputLayer.stream().forEach(Neuron::calculateOutput);
 
         return outputLayer.stream().map(Neuron::getOutput).collect(Collectors.toList());
     }
 
-    /*
-     * Returns the error
-     */
-    public Double trainNetworkInBatch(BatchTrainingSample batchTrainingSample) {
-        double error = 0;
-        for (TrainingSample trainingSample : batchTrainingSample.getTrainingSamples()) {
-            List<Double> actualOutputs = trainNetwork(trainingSample);
-            double currentError = Math.abs(calculateError(trainingSample, actualOutputs));
-            error += currentError;
-        }
 
-        return error;
-    }
+    public List<List<Double>> trainNetwork(BatchTrainingSample batchTrainingSample) {
 
-    /*
-     *  One iteration only, returns the output
-     */
-    public List<Double> trainNetwork(TrainingSample trainingSample) {
-        if (INPUT_LAYER_SIZE != trainingSample.getInputSize())
-            throw new IllegalStateException("Input layer size mismatch ");
-        if (OUTPUT_LAYER_SIZE != trainingSample.getOutputSize())
-            throw new IllegalStateException("Output layer size mismatch ");
+        List<List<Double>> actualOutputs = new ArrayList<>();
+        List<Double> hiddenLayerStateDeltas = new ArrayList<>();
 
         // Feed the input to activate neurons
-        List<Double> actualOutputs = feedInputWithNetwork(trainingSample.getInputs());
+        for (TrainingSample trainingSample : batchTrainingSample.getTrainingSamples()) {
+            checkInputDimensions(trainingSample);
 
-        for (int i = 0; i < outputLayer.size(); i++) {
-            Neuron outputNeuron = outputLayer.get(i);
-            Double desiredOutput = trainingSample.getOutput(i);
-            for (Weight weight : outputNeuron.getIncomingWeights()) {
-                double actualOutput = outputNeuron.getOutput();
-                double hiddenLayerNeuronOutput = weight.getFromNeuron().getOutput();
-                double partialDerivative =
-                        -actualOutput * (1.0 - actualOutput)   // ~ derivative of the sigmoid function
-                                * hiddenLayerNeuronOutput               // ~ input from previous layer
-                                * (desiredOutput - actualOutput);       // ~ error
 
-                // not a real update, just set the gradient, and make the actual update after all gradients are calculated
-                double deltaWeight = -LEARNING_RATE * partialDerivative;
-                double newWeight = weight.getWeight() + deltaWeight;
-                weight.setPreviousDelta(deltaWeight);
+            actualOutputs.add(feedInputWithNetwork(trainingSample.getInputs()));
 
-                weight.setNewWeight(newWeight + MOMENTUM * weight.getPreviousDelta());
+            for (int i = 0; i < outputLayer.size(); i++) {
+                Neuron outputNeuron = outputLayer.get(i);
+                Double desiredOutput = trainingSample.getOutput(i);
+                for (Weight weight : outputNeuron.getIncomingWeights()) {
+                    double actualOutput = outputNeuron.getOutput();
+                    double hiddenLayerNeuronOutput = weight.getFromNeuron().getOutput();
+                    double partialDerivative =
+                            -actualOutput * (1.0 - actualOutput)   // ~ derivative of the sigmoid function
+                                    * hiddenLayerNeuronOutput               // ~ input from previous layer
+                                    * (desiredOutput - actualOutput);       // ~ error
+
+                    // not a real update, just set the gradient, and make the actual update after all gradients are calculated
+                    weight.addDelta(partialDerivative);
+
+                    double deltaWeight = -LEARNING_RATE * partialDerivative;
+                    double newWeight = weight.getWeight() + deltaWeight;
+                    weight.setPreviousDelta(deltaWeight);
+
+                    weight.setNewWeight(newWeight + MOMENTUM * weight.getPreviousDelta());
+                }
+            }
+
+            for (int i = 0; i < hiddenLayer.size(); i++) {
+                Neuron hiddenNeuron = hiddenLayer.get(i);
+                //Calculate backpropagated error
+                double backpropagatedError = getBackpropagatedError(trainingSample.getExpectedOutputs(), hiddenNeuron);
+
+                for (Weight weight : hiddenNeuron.getIncomingWeights()) {
+                    double hiddenLayerNeuronOutput = hiddenNeuron.getOutput();
+                    double previousLayerOutput = weight.getFromNeuron().getOutput();
+
+                    double partialDerivative =
+                            hiddenLayerNeuronOutput * (1 - hiddenLayerNeuronOutput)
+                                    * previousLayerOutput
+                                    * backpropagatedError;  // instead of (desired - actual), here we calculate with a backprop. value
+                    weight.addDelta(partialDerivative);
+
+                    double deltaWeight = -LEARNING_RATE * partialDerivative;
+                    double newWeight = weight.getWeight() + deltaWeight;
+                    weight.setPreviousDelta(deltaWeight);
+
+                    weight.setNewWeight(newWeight + MOMENTUM * weight.getPreviousDelta());
+                }
             }
         }
-
-        for (int i = 0; i < hiddenLayer.size(); i++) {
-            Neuron hiddenNeuron = hiddenLayer.get(i);
-            //Calculate backpropagated error
-            double backpropagatedError = getBackpropagatedError(trainingSample.getExpectedOutputs(), hiddenNeuron);
-
-            for (Weight weight : hiddenNeuron.getIncomingWeights()) {
-                double hiddenLayerNeuronOutput = hiddenNeuron.getOutput();
-                double previousLayerOutput = weight.getFromNeuron().getOutput();
-
-                double partialDerivative =
-                        hiddenLayerNeuronOutput * (1 - hiddenLayerNeuronOutput)
-                                * previousLayerOutput
-                                * backpropagatedError;  // instead of (desired - actual), here we calculate with a backprop. value
-
-                double deltaWeight = -LEARNING_RATE * partialDerivative;
-                double newWeight = weight.getWeight() + deltaWeight;
-                weight.setPreviousDelta(deltaWeight);
-
-                weight.setNewWeight(newWeight + MOMENTUM * weight.getPreviousDelta());
-            }
-        }
-
         /*
          * Update the weights with the gradients
          */
         outputLayer.stream()
                 .flatMap(neuron -> neuron.getIncomingWeights().stream())
-                .forEach(Weight::updateWeight);
+                .forEach(Weight::updateWeightBatchTraining);
         hiddenLayer.stream()
                 .flatMap(neuron -> neuron.getIncomingWeights().stream())
-                .forEach(Weight::updateWeight);
+                .forEach(Weight::updateWeightBatchTraining);
 
         return actualOutputs;
+    }
+
+    private void checkInputDimensions(TrainingSample trainingSample) {
+        if (INPUT_LAYER_SIZE != trainingSample.getInputSize())
+            throw new IllegalStateException("Input layer size mismatch ");
+        if (OUTPUT_LAYER_SIZE != trainingSample.getOutputSize())
+            throw new IllegalStateException("Output layer size mismatch ");
     }
 
     private double getBackpropagatedError(List<Double> expectedOutputs, Neuron hiddenNeuron) {

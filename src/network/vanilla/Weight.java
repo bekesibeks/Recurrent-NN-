@@ -1,5 +1,6 @@
-package network;
+package network.vanilla;
 
+import static utils.NetworkUtils.LEARNING_RATE;
 import static utils.NetworkUtils.RANDOM;
 
 public class Weight {
@@ -13,17 +14,32 @@ public class Weight {
     private double newWeight;
     private double previousDelta;
     private double adagradDelta;
+    private double delta;
 
     public Weight(Neuron fromNeuron, Neuron toNeuron) {
         this.fromNeuron = fromNeuron;
         this.toNeuron = toNeuron;
 
-        weight = (RANDOM.nextDouble() * 2) - 1;
-        previousDelta = 0;
+        this.weight = (RANDOM.nextDouble() * 2) - 1; //  (-1, 1)
+        this.previousDelta = 0;
+        this.delta = 0;
     }
 
-    public void updateWeight(){
+    // In case online training is used, this method should be called in each iteration after gradients are calculated
+    public void updateWeightOnlineTraining() {
         this.weight = newWeight;
+    }
+
+    // In case batch training is used, this method should be called, after each batch
+    public void updateWeightBatchTraining() {
+        double batchDelta = -LEARNING_RATE * delta;
+
+        double newWeight = weight + batchDelta;
+        // Notice, MOMENTUM or ADAGRAD is not used here,
+        // TODO -> implement them later if the performance is bad
+        weight = newWeight;
+
+        delta = 0;
     }
 
     public double getPreviousDelta() {
@@ -64,5 +80,13 @@ public class Weight {
 
     public void setAdagradDelta(double adagradDelta) {
         this.adagradDelta = adagradDelta;
+    }
+
+    public double getDelta() {
+        return delta;
+    }
+
+    public void addDelta(double delta) {
+        this.delta += delta;
     }
 }

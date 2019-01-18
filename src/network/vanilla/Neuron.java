@@ -1,4 +1,4 @@
-package network;
+package network.vanilla;
 
 import utils.NetworkUtils;
 
@@ -13,16 +13,16 @@ public class Neuron {
     /*
         Only to help debugging, can be removed later on
      */
-    private final String neuronName;
-    private final Map<String, Weight> weightsLookup;
+    protected final String neuronName;
+    protected final Map<String, Weight> weightsLookup;
 
-    private final List<Weight> incomingWeights;
+    protected final List<Weight> incomingWeights;
 
     /*
        Maybe bias doesnt need to be a separated weight
      */
-    private Weight bias;
-    private double output;
+    protected Weight bias;
+    protected double output;
 
     public Neuron() {
         incomingWeights = new ArrayList<>();
@@ -30,13 +30,14 @@ public class Neuron {
         neuronName = ++NEURON_COUNTER + "#";
     }
 
-    public void calculateOutput() {
+    public double calculateOutput() {
         output = incomingWeights.stream()
                 .map(weight -> weight.getWeightenedOutput()) // Notice bias is included in here
                 .mapToDouble(weight -> weight)
                 .sum();
 
         output = sigmoid(output);
+        return output;
     }
 
     public void addBias() {
