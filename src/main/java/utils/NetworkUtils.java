@@ -22,7 +22,7 @@ public class NetworkUtils {
 
     private static Neuron BIAS_NEURON;
 
-    public static final double LEARNING_RATE = 0.7;
+    public static final double LEARNING_RATE = 0.9;
     public static final double MOMENTUM = 0.7;
 
     public static final Random RANDOM = new Random();
