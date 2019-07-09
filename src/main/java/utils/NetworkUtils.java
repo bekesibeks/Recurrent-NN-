@@ -1,11 +1,8 @@
 package utils;
 
-import network.recurrent.RecurrentNeuralNetwork;
-import network.recurrent.RecurrentNeuron;
-import network.vanilla.Neuron;
+import network.objectbased.vanilla.Neuron;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -18,9 +15,8 @@ public class NetworkUtils {
     public static final int HIDDEN_LAYER_SIZE = 4;
     public static final int OUTPUT_LAYER_SIZE = 1;
 
-    public static final int UNFOLD_COUNT = 20;
-
     private static Neuron BIAS_NEURON;
+    private static final double BIAS_OUTPUT = -1;
 
     public static final double LEARNING_RATE = 0.9;
     public static final double MOMENTUM = 0.7;
@@ -32,7 +28,7 @@ public class NetworkUtils {
     public static Neuron getBias() {
         if (isNull(BIAS_NEURON)) {
             BIAS_NEURON = new Neuron();
-            BIAS_NEURON.setOutput(-1);
+            BIAS_NEURON.setOutput(BIAS_OUTPUT);
         }
         return BIAS_NEURON;
     }
@@ -41,12 +37,6 @@ public class NetworkUtils {
     public static List<Neuron> createNeurons(int count) {
         return IntStream.range(0, count)
                 .mapToObj(i -> new Neuron())
-                .collect(Collectors.toList());
-    }
-
-    public static List<RecurrentNeuron> createRecurrentNeurons(int count) {
-        return IntStream.range(0, count)
-                .mapToObj(i -> new RecurrentNeuron())
                 .collect(Collectors.toList());
     }
 

@@ -1,4 +1,4 @@
-package network.vanilla;
+package network.objectbased.vanilla;
 
 import static utils.NetworkUtils.LEARNING_RATE;
 import static utils.NetworkUtils.RANDOM;

@@ -1,4 +1,4 @@
-package network.data;
+package network.objectbased.data;
 
 import java.util.ArrayList;
 import java.util.List;

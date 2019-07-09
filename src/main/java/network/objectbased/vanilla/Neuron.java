@@ -1,4 +1,4 @@
-package network.vanilla;
+package network.objectbased.vanilla;
 
 import utils.NetworkUtils;
 

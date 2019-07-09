@@ -1,7 +1,6 @@
-import network.recurrent.RecurrentNeuralNetwork;
-import network.vanilla.NeuralNetwork;
-import network.data.BatchTrainingSample;
-import network.data.TrainingSample;
+import network.objectbased.data.BatchTrainingSample;
+import network.objectbased.data.TrainingSample;
+import network.objectbased.vanilla.NeuralNetwork;
 
 import java.util.List;
 

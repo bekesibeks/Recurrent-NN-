@@ -1,9 +1,7 @@
-package network.recurrent;
+package network.objectbased.vanilla;
 
-import network.data.BatchTrainingSample;
-import network.data.TrainingSample;
-import network.vanilla.Neuron;
-import network.vanilla.Weight;
+import network.objectbased.data.BatchTrainingSample;
+import network.objectbased.data.TrainingSample;
 import utils.NetworkUtils;
 
 import java.util.ArrayList;
@@ -13,15 +11,15 @@ import java.util.stream.Collectors;
 import static java.util.Objects.nonNull;
 import static utils.NetworkUtils.*;
 
-public class RecurrentNeuralNetwork {
+public class NeuralNetwork {
 
     private final List<Neuron> inputLayer;
-    private final List<RecurrentNeuron> hiddenLayer;
+    private final List<Neuron> hiddenLayer;
     private final List<Neuron> outputLayer;
 
-    public RecurrentNeuralNetwork() {
+    public NeuralNetwork() {
         this.inputLayer = NetworkUtils.createNeurons(INPUT_LAYER_SIZE);
-        this.hiddenLayer = NetworkUtils.createRecurrentNeurons(HIDDEN_LAYER_SIZE);
+        this.hiddenLayer = NetworkUtils.createNeurons(HIDDEN_LAYER_SIZE);
         this.outputLayer = NetworkUtils.createNeurons(OUTPUT_LAYER_SIZE);
 
         NetworkUtils.buildConnectionBetweenNeurons(inputLayer, hiddenLayer);
@@ -39,18 +37,19 @@ public class RecurrentNeuralNetwork {
             inputLayer.get(i).setOutput(inputs.get(i));
         }
 
-        List<Double> outputsOfHiddenLayer = hiddenLayer.stream().map(Neuron::calculateOutput).collect(Collectors.toList());
-        hiddenLayer.stream().forEach(neuron -> neuron.addPreviousOutput(outputsOfHiddenLayer));
+        hiddenLayer.stream().forEach(Neuron::calculateOutput);
         outputLayer.stream().forEach(Neuron::calculateOutput);
 
         return outputLayer.stream().map(Neuron::getOutput).collect(Collectors.toList());
     }
 
-
+    /*
+     *  One iteration only, returns the output
+     */
     public List<List<Double>> trainNetwork(BatchTrainingSample batchTrainingSample) {
 
+
         List<List<Double>> actualOutputs = new ArrayList<>();
-        List<Double> hiddenLayerStateDeltas = new ArrayList<>();
 
         // Feed the input to activate neurons
         for (TrainingSample trainingSample : batchTrainingSample.getTrainingSamples()) {

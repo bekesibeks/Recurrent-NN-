@@ -1,6 +1,17 @@
 package math.utils;
 
+import math.model.Matrix;
+
 public class MatrixUtils {
+
+
+    public static Matrix dotProduct(Matrix leftMatrix, Matrix rightMatrix) {
+        return new Matrix(dotProduct(leftMatrix.getMatrix(), rightMatrix.getMatrix()));
+    }
+
+    public static Matrix dotProduct(Matrix matrix, double multiplier) {
+        return new Matrix(dotProduct(matrix.getMatrix(), multiplier));
+    }
 
     /*
      * Multiply every element in the matrix with a const value
@@ -18,7 +29,7 @@ public class MatrixUtils {
      * Dot product of two matrices
      */
     public static double[][] dotProduct(double[][] leftMatrix, double[][] rightMatrix) {
-        if (leftMatrix.length != rightMatrix[0].length)
+        if (leftMatrix[0].length != rightMatrix.length)
             throw new IllegalStateException("Matrix dimensions are not match. ");
 
         double[][] product = new double[leftMatrix.length][rightMatrix[0].length];
@@ -36,6 +47,27 @@ public class MatrixUtils {
         return product;
     }
 
+    public static double[][] dotProductElementwise(double[][] leftMatrix, double[][] rightMatrix) {
+        if (leftMatrix.length != rightMatrix[0].length)
+            throw new IllegalStateException("Matrix dimensions are not match. ");
+
+        int dimension = leftMatrix.length;
+
+        double[][] product = new double[dimension][dimension];
+
+
+        for (int i = 0; i < dimension; i++) {
+            for (int j = 0; j < dimension; j++) {
+                product[i][j] = leftMatrix[i][j] * rightMatrix[i][j];
+            }
+        }
+        return product;
+    }
+
+
+    /*
+     * Add constant value to element wise to the matrix
+     */
     public static double[][] add(double[][] matrix, double constant) {
         for (int i = 0; i < matrix.length; i++) {
             for (int j = 0; j < matrix[0].length; j++) {
@@ -49,10 +81,10 @@ public class MatrixUtils {
      * TODO -> write unit tests instead
      */
     public static void main(String[] args) {
-        double[][] left = {{3, -2, 5}, {3, 0, 4}};
-        double[][] right = {{2, 3}, {-9, 0}, {0, 4}};
+        double[][] left = {{3, 1}, {3, 1}, {3, 1}, {3, 1}};
+        double[][] right = {{2}, {1}};
 
-        double[][] result = dotProduct(left, right);
+        double[][] result = dotProduct(right, left);
 
         for (int i = 0; i < result.length; i++) {
             for (int j = 0; j < result[0].length; j++) {
