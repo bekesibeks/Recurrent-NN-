@@ -14,14 +14,19 @@ public class ConvolutionUtils {
 
         int kernelSize = kernel.length;
 
-        double[][] result = new double[resultMatrixSizeX][resultMatrixSizeY];
+        // TODO -> result matrix size should be calculated above
+        double[][] result = new double[sourceMatrix.length][sourceMatrix[0].length];
         double[][] partToConvolve = new double[kernel.length][kernel[0].length];
 
         /*
          * i, j iterating over the source matrix
          */
-        for (int i = 0; i < sourceMatrix.length - kernelSize; i++) {
-            for (int j = 0; j < sourceMatrix[0].length - kernelSize; j++) {
+        int resultMatrixIndexX = 0;
+        int resultMatrixIndexY = 0;
+
+        for (int i = 0; i < sourceMatrix.length - kernelSize; i += stride) {
+            resultMatrixIndexY = 0;
+            for (int j = 0; j < sourceMatrix[0].length - kernelSize; j += stride) {
                 /*
                  * indexX,indexY iterating over the subMatrix which need to be used during the convolution
                  */
@@ -40,8 +45,10 @@ public class ConvolutionUtils {
                     }
                 }
                 //
-                result[i][j] = sum;
+                result[resultMatrixIndexX][resultMatrixIndexY] = sum;
+                resultMatrixIndexY++;
             }
+            resultMatrixIndexX++;
         }
 
 

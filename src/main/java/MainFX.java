@@ -17,6 +17,8 @@ import javax.imageio.ImageIO;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainFX extends Application {
     public static void main(String[] args) {
@@ -79,16 +81,28 @@ public class MainFX extends Application {
             }
         }
 
-        double[][] convolvedRedValues = ConvolutionUtils.convolution(redLayer, edgeDetectionKernel, 1);
-        double[][] convolvedGreenValues = ConvolutionUtils.convolution(greenLayer, edgeDetectionKernel, 1);
-        double[][] convolvedBlueValues = ConvolutionUtils.convolution(blueLayer, edgeDetectionKernel, 1);
+
+        int strideForRed = 1;
+        int strideForGreen = 2;
+        int strideForBlue = 3;
+
+        double[][] convolvedRedValues = ConvolutionUtils.convolution(redLayer, edgeDetectionKernel, strideForRed);
+        double[][] convolvedGreenValues = ConvolutionUtils.convolution(greenLayer, boxBlurKernel, strideForGreen);
+        double[][] convolvedBlueValues = ConvolutionUtils.convolution(blueLayer, identityKernel, strideForBlue);
+
+        // TODO -> more sophisticated solution
+        List<double[][]> colorDimensions = new ArrayList<>();
+        colorDimensions.add(convolvedBlueValues);
+        colorDimensions.add(convolvedRedValues);
+        colorDimensions.add(convolvedBlueValues);
+
 
         for (int x = 0; x < convolvedRedValues.length; x++) {
             for (int y = 0; y < convolvedRedValues[0].length; y++) {
                 //  normalise colors to 0-1
                 double redValue = Math.max(Math.min(convolvedRedValues[x][y], 1), 0);
                 double greenValue = Math.max(Math.min(convolvedGreenValues[x][y], 1), 0);
-                double blueValue = Math.max(Math.min(convolvedBlueValues[x][y], 1), 0);
+                double blueValue =  Math.max(Math.min(convolvedBlueValues[x][y], 1), 0);
 
                 targetImage.setColor(x, y, Color.color(redValue, greenValue, blueValue, 1));
             }
